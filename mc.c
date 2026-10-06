@@ -22,6 +22,8 @@ Direction mc_choose_move_margin(const Board *b, int rollouts, unsigned int *seed
     for (int d = 0; d < 4; d++) {
         Board first = *b;
         if (!board_move(&first, (Direction)d)) continue;  // movimento inválido
+        // Organização logo após o movimento (antes do spawn, que só adicionaria ruído).
+        double snake = board_gabarito_similarity(&first);
         board_spawn_tile(&first, seed);
 
         double total = 0.0;
@@ -30,7 +32,7 @@ Direction mc_choose_move_margin(const Board *b, int rollouts, unsigned int *seed
             total += MC_LOG2_SCORE ? score_log2(s) : (double)s;  // média em log2: linear e robusta a partidas sortudas
         }
 
-        double mean = total / rollouts;
+        double mean = (total / rollouts) * (1.0 + MC_SNAKE_WEIGHT * snake);
         if (mean > best_mean) { second_mean = best_mean; best_mean = mean; best = (Direction)d; }
         else if (mean > second_mean) second_mean = mean;
     }

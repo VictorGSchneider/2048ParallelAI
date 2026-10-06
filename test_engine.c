@@ -113,6 +113,16 @@ int main(void) {
         Board g = make(dead);
         CHECK(board_move(&g, mc_choose_move(&g, 5, &seed)) == 0);
     }
+    // Premissa do bônus cobra no MC: a métrica ordena corretamente as jogadas que ele compara
+    {
+        // Linha 0 = [2,2,4,0]; esquerda dá [4,4,0,0] e direita dá [0,0,4,4]; só a esquerda
+        // mantém os blocos no começo do caminho da cobra, então precisa ter nota maior.
+        int v[4][4] = {{2,2,4,0},{0},{0},{0}};
+        Board b = make(v);
+        Board l = b, r = b;
+        board_move(&l, DIR_LEFT); board_move(&r, DIR_RIGHT);
+        CHECK(board_gabarito_similarity(&l) > board_gabarito_similarity(&r));
+    }
     // Monte Carlo joga bem melhor que movimentos aleatórios, e o dataset é coerente
     {
         unsigned int seed = 11;
@@ -123,7 +133,7 @@ int main(void) {
         Dataset ds;
         dataset_generate(&ds, 3, 2, 8, 99);
         CHECK(ds.games == 3 && ds.count > 0);
-        CHECK(ds.avg_score > rnd);
+        CHECK(ds.avg_score > rnd);  // mesmo com o bônus cobra, o MC joga melhor que o aleatório
         for (int i = 0; i < ds.count; i++) CHECK(ds.samples[i].move < 4);
 
         // Teste de cada iteração (partida) do Monte Carlo e de cada jogada gravada

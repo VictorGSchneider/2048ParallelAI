@@ -13,6 +13,10 @@
 #define MC_LOG2_SCORE 1     // 1 = a média das simulações é em log2(1 + score); 0 = score bruto (ver ADR §5)
 #endif
 
+#ifndef MC_SNAKE_WEIGHT
+#define MC_SNAKE_WEIGHT 0.02 // bônus pela organização "cobra" do tabuleiro logo após a jogada (0 = desligado; ver ADR §5)
+#endif
+
 #ifndef MC_MIN_MARGIN
 #define MC_MIN_MARGIN 0.0   // descarta exemplos em que o MC não tem confiança (margem menor que isso)
 #endif
@@ -52,8 +56,9 @@ typedef struct {
 int mc_random_playout(Board b, unsigned int *seed);
 
 // Para cada uma das 4 direções válidas: aplica o movimento, sorteia o spawn e
-// faz `rollouts` partidas aleatórias até perder. Retorna a direção com maior
-// score médio. Se nenhuma direção é válida (game over), devolve DIR_UP e o
+// faz `rollouts` partidas aleatórias até perder. Retorna a direção de maior valor:
+//   valor = média(score das simulações; em log2 se MC_LOG2_SCORE) * (1 + MC_SNAKE_WEIGHT * cobra)
+// onde cobra = similaridade com o gabarito do tabuleiro logo após o movimento (antes do spawn). Se nenhuma direção é válida (game over), devolve DIR_UP e o
 // chamador percebe via board_move == 0.
 Direction mc_choose_move(const Board *b, int rollouts, unsigned int *seed);
 

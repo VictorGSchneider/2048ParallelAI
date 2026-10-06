@@ -52,13 +52,13 @@ Antes do GA de jogo, um jogador Monte Carlo (`mc.c`) gera exemplos:
   nas partidas mantidas). Antes do pré-treino, `dataset_verify` confere cada jogada gravada (precisa
   ser válida no tabuleiro gravado, expoentes em 0..17) e a coerência das estatísticas; se falhar, o
   programa aborta. `make test` roda a mesma verificação e confirma que ela detecta um dado adulterado.
-  Achado: o MC chega a 1024–2048, mas com cobra de só ~12–25% (média ~20%), no nível do GA sem bônus.
-  Ele maximiza score nas simulações aleatórias e não organiza o tabuleiro em cobra, então suas
-  jogadas não são um bom "professor" para essa organização.
+  Achado: sem o bônus cobra, o MC chega a 1024–2048 mas com cobra de só ~12–25% (média ~20%), no
+  nível do GA sem bônus: ele maximiza score nas simulações aleatórias e não organiza o tabuleiro em
+  cobra. Por isso foi adicionado o bônus cobra à jogada do MC (próxima seção).
 - As partidas MC são paralelizadas (uma por iteração, `schedule(dynamic)`); o resultado independe das threads.
   `./2048-ga <threads> <csv> 0` desliga o Monte Carlo.
 
-**O MC joga bem** (score médio ≈ 11.000–13.000, melhor ≈ 25.000–30.000, em ~0,6 s com 4 threads), contra ≈ 4.000–6.000
+**O MC joga bem** (sem o bônus cobra: score médio ≈ 11.000–13.000, melhor ≈ 25.000–30.000, em ~0,6 s com 4 threads; com o bônus padrão cai para ≈ 7.000, ver abaixo), contra ≈ 4.000–6.000
 do GA. **Mas imitá-lo não ajudou o GA:** a acurácia de imitação fica em ~33–37% (as jogadas do MC se
 distribuem de forma uniforme nas 4 direções e o alvo é ruidoso com poucas simulações).
 Medição (média do melhor fitness em 20 gerações, 6 sementes de população; ruído ≈ ±130):
@@ -75,6 +75,43 @@ O ganho aparente de +10% da 2ª linha vem das 30 gerações extras (o controle j
 Conclusão: com esta rede/GA, o pré-treino por imitação é neutro. O MC fica como componente opcional;
 caminhos que provavelmente rendem mais são usá-lo como parte do fitness ou como jogador-professor
 numa rede maior.
+
+### Bônus cobra na jogada do MC
+`valor da direção = média(log2(1 + score) das simulações) × (1 + MC_SNAKE_WEIGHT × cobra)`, com `cobra` =
+similaridade com o gabarito do tabuleiro **logo após o movimento, antes do spawn** (nas simulações
+aleatórias a organização se perde, então a nota ao final delas seria só ruído; o spawn só acrescentaria ruído).
+
+**O MC sozinho:** o bônus troca score por organização, sem ponto em que os dois melhorem (4 sementes × 24 partidas):
+
+| `MC_SNAKE_WEIGHT` | Score médio | Cobra média na partida | Partidas ≥ 2048 |
+|---|---|---|---|
+| 0 | 12.806 | 19,9% | 7/96 |
+| 0,001 | 11.136 | 21,7% | 4/96 |
+| 0,006 | 9.798 | 26,3% | 0/96 |
+| **0,02 (padrão)** | **7.050** | **30,8%** | 0/96 |
+| 0,1 | 4.927 | 38,4% | 0/96 |
+| 0,3 | 3.296 | 42,7% | 0/96 |
+
+Até um peso pequeno domina, porque as simulações diferenciam pouco as direções (diferenças de
+centésimos em log2). Maximizar a organização imediata, de forma gulosa, atrapalha os merges grandes.
+
+**O que importa: o GA pré-treinado com esses dados** (12 sementes, 30 gerações de pré-treino + 50 de
+jogo, média do melhor nas últimas 20 gerações; controle sem MC com as mesmas 80 gerações no total):
+
+| Dados do pré-treino | Sementes 1–6 | Sementes 7–12 | Média |
+|---|---|---|---|
+| controle: sem MC, 80 gerações | 5.304 | 5.237 | 5.270 |
+| MC peso 0 | 4.651 | 4.507 | **4.579** |
+| MC peso 0,006 | 5.120 | 5.272 | 5.196 |
+| **MC peso 0,02 (padrão)** | 5.354 | 5.390 | **5.372** |
+| MC peso 0,05 | 5.255 | 5.328 | 5.292 |
+| MC peso 0,1 | 4.950 | 5.454 | 5.202 |
+
+Achados: (1) imitar o MC **sem** bônus piora o GA (−13% contra o controle, replicado nos dois conjuntos
+de sementes); (2) com o bônus o dano some e o resultado fica no nível do controle (+2%, dentro do ruído);
+(3) o **cobra do GA não muda** (~42% em todos): quem o determina é o bônus no fitness, não o pré-treino.
+Ou seja, o MC organizado deixa de atrapalhar, mas **não traz ganho mensurável**. 0,02 é o melhor
+nominal e fica como padrão. O pré-treino por imitação continua sem justificar sozinho seu custo.
 
 ### log2 para encurtar e linearizar os números
 O **tabuleiro e a entrada da rede já eram log2** (o grid guarda o expoente; a rede recebe `exp/17`).

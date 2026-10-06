@@ -32,5 +32,8 @@ Antes do GA, cada partida do Monte Carlo imprime uma linha `mc ...` com a simila
 O score entra em log2 (`score_log2`) na média das simulações do Monte Carlo (`MC_LOG2_SCORE`, ligado)
 e, opcionalmente, no fitness do GA (`FITNESS_LOG2`, desligado: não ajudou; ver ADR §5).
 
+A jogada do Monte Carlo soma um bônus de organização cobra (`MC_SNAKE_WEIGHT`, 0,02): ele organiza mais o
+tabuleiro, mas pontua menos; ver ADR §5 para as medições.
+
 Parâmetros do GA (população, mutação etc.) estão em `genetic.h`; o nº de gerações em `main.c`
 (`-DNUM_GENERATIONS=N` para sobrescrever).
