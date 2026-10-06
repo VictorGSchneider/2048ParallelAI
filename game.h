@@ -39,6 +39,11 @@ void board_load_gabarito(Board *b);
 // empates irrelevantes. O próprio gabarito dá 1.0; um tabuleiro vazio também (trivialmente).
 double board_gabarito_similarity(const Board *b);
 
+// Score em escala log2: log2(1 + score). O score soma VALORES dos merges (cresce de forma
+// exponencial: 30.000+ numa boa partida); em log2 vira ~ "quantas vezes dobrou", linear no
+// progresso, e uma partida sortuda não domina as médias. O +1 mantém score 0 -> 0.
+double score_log2(int score);
+
 // Debug: imprime o tabuleiro no terminal.
 void board_print(const Board *b);
 

@@ -29,5 +29,8 @@ se parecem com o gabarito em zigue-zague (ver ADR §6). Cada geração imprime `
 Antes do GA, cada partida do Monte Carlo imprime uma linha `mc ...` com a similaridade cobra
 (`*` = partida usada no pré-treino) e o dataset é verificado (`dataset_verify`).
 
+O score entra em log2 (`score_log2`) na média das simulações do Monte Carlo (`MC_LOG2_SCORE`, ligado)
+e, opcionalmente, no fitness do GA (`FITNESS_LOG2`, desligado: não ajudou; ver ADR §5).
+
 Parâmetros do GA (população, mutação etc.) estão em `genetic.h`; o nº de gerações em `main.c`
 (`-DNUM_GENERATIONS=N` para sobrescrever).

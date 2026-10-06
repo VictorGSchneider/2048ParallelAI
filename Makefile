@@ -13,7 +13,7 @@ OBJ = $(SRC:.c=.o)
 
 # teste isolado do motor do jogo
 test_game: game.c game.h
-	$(CC) -O0 -g -Wall -DTEST_GAME game.c -o test_game
+	$(CC) -O0 -g -Wall -DTEST_GAME game.c -o test_game -lm
 
 # testes automáticos do motor (regras de merge, game over, spawn)
 test: test_engine

@@ -39,8 +39,8 @@ O fitness oscila entre gerações porque cada geração usa partidas novas (seed
 ## 5. Monte Carlo + pré-treino do GA
 Antes do GA de jogo, um jogador Monte Carlo (`mc.c`) gera exemplos:
 - **Jogada MC:** para cada uma das 4 direções válidas, aplica o movimento e faz `MC_ROLLOUTS` (10)
-  partidas **aleatórias até travar**; escolhe a direção de maior score médio (a média é mais robusta
-  que o máximo, que premia sorte). É uma busca "achatada": simulações aleatórias em vez de expandir a
+  partidas **aleatórias até travar**; escolhe a direção de maior média de **log2(1 + score)** das simulações (a média é mais
+  robusta que o máximo, que premia sorte; ver "log2" abaixo). É uma busca "achatada": simulações aleatórias em vez de expandir a
   árvore completa 4→16→64..., que cresce exponencialmente e não é viável até o fim da partida.
 - **Dados:** o MC joga `MC_GAMES` (16) partidas completas e só as `MC_KEEP_GAMES` (4) de maior score
   (as que "mais avançaram") viram exemplos `(tabuleiro → jogada)`. Opcionalmente `MC_MIN_MARGIN`
@@ -58,7 +58,7 @@ Antes do GA de jogo, um jogador Monte Carlo (`mc.c`) gera exemplos:
 - As partidas MC são paralelizadas (uma por iteração, `schedule(dynamic)`); o resultado independe das threads.
   `./2048-ga <threads> <csv> 0` desliga o Monte Carlo.
 
-**O MC joga bem** (score médio ≈ 11.000, melhor ≈ 30.000, em ~0,6 s com 4 threads), contra ≈ 4.000–6.000
+**O MC joga bem** (score médio ≈ 11.000–13.000, melhor ≈ 25.000–30.000, em ~0,6 s com 4 threads), contra ≈ 4.000–6.000
 do GA. **Mas imitá-lo não ajudou o GA:** a acurácia de imitação fica em ~33–37% (as jogadas do MC se
 distribuem de forma uniforme nas 4 direções e o alvo é ruidoso com poucas simulações).
 Medição (média do melhor fitness em 20 gerações, 6 sementes de população; ruído ≈ ±130):
@@ -75,6 +75,22 @@ O ganho aparente de +10% da 2ª linha vem das 30 gerações extras (o controle j
 Conclusão: com esta rede/GA, o pré-treino por imitação é neutro. O MC fica como componente opcional;
 caminhos que provavelmente rendem mais são usá-lo como parte do fitness ou como jogador-professor
 numa rede maior.
+
+### log2 para encurtar e linearizar os números
+O **tabuleiro e a entrada da rede já eram log2** (o grid guarda o expoente; a rede recebe `exp/17`).
+O que ainda crescia de forma exponencial era o **score** (soma dos valores dos merges: 30.000+ numa
+boa partida), que domina médias e fitness. `score_log2(s) = log2(1 + s)` o transforma em "quantas
+vezes dobrou": linear no progresso, e uma partida sortuda deixa de dominar a média.
+
+| Onde | Resultado | Padrão |
+|---|---|---|
+| **MC** (média das simulações, `MC_LOG2_SCORE`) | score médio das partidas MC **10.880 → 12.806 (+18%)** (4×24 partidas); cobra e nº de partidas ≥ 2048 iguais | **ligado** |
+| **Fitness do GA** (`FITNESS_LOG2`) | **não ajudou:** 150 gerações, 6 sementes: 5.416–5.577 (peso 0,1–0,3) contra 5.803 do linear com bônus | desligado |
+
+No GA o log comprime a diferença entre bons e ótimos jogadores (dobrar o score soma só +1 em ~12),
+reduzindo a pressão de seleção por pontos; além disso muda a escala do bônus cobra, que passa a
+precisar de peso ~0,1–0,3 em vez de 3 (com peso ≥ 1 o score cai: 4.016 e 3.635 em 50 gerações).
+A tabela do pré-treino por imitação (§5) foi medida antes dessa mudança, com o MC em score bruto.
 
 ## 6. Gabarito "cobra" (referência de organização)
 O tabuleiro de referência (`board_load_gabarito`) é a configuração perfeita em zigue-zague:

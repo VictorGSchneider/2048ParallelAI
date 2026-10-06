@@ -10,6 +10,9 @@
 #define ELITE_COUNT          4    // os N melhores passam direto pra próxima geração
 #define MUTATION_RATE        0.05 // chance de cada peso sofrer mutação
 #define MUTATION_STRENGTH    0.3  // desvio da perturbação
+#ifndef FITNESS_LOG2
+#define FITNESS_LOG2         0    // 1 = fitness usa log2(1 + score) (exige SNAKE_WEIGHT ~0.1-0.3); 0 = score bruto
+#endif
 #ifndef SNAKE_WEIGHT
 #define SNAKE_WEIGHT         3.0  // bônus de fitness pela organização "cobra" (0 = desligado); ver ADR §6
 #endif
@@ -17,8 +20,10 @@
 
 typedef struct {
     Network net;
-    double  fitness;  // = score * (1 + SNAKE_WEIGHT * snake)  (no pré-treino: acurácia de imitação)
+    double  fitness;  // = base * (1 + SNAKE_WEIGHT * snake), base = lscore (FITNESS_LOG2) ou score
+                      //   (no pré-treino: acurácia de imitação)
     double  score;    // score médio puro das partidas (sem o bônus)
+    double  lscore;   // média de log2(1 + score) das partidas
     double  snake;    // similaridade média com o gabarito "cobra" ao longo das partidas, em [0, 1]
 } Individual;
 

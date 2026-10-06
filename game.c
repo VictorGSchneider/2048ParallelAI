@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "game.h"
 
 void board_init(Board *b, unsigned int *seed) {
@@ -132,6 +133,10 @@ double board_gabarito_similarity(const Board *b) {
         if (b->grid[r][c] == sorted[k]) match++;
     }
     return (double)match / n;
+}
+
+double score_log2(int score) {
+    return log2(1.0 + (double)score);
 }
 
 void board_print(const Board *b) {

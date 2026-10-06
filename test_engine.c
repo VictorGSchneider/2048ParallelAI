@@ -150,6 +150,13 @@ int main(void) {
         dataset_free(&ds);
     }
 
+    // score_log2: 0 -> 0, monotônica, e 2^k - 1 -> k
+    {
+        CHECK(score_log2(0) == 0.0);
+        CHECK(fabs(score_log2(1023) - 10.0) < 1e-9);
+        CHECK(score_log2(100) < score_log2(200) && score_log2(200) < score_log2(30000));
+        CHECK(score_log2(30000) < 15.0);  // 30.000 pontos viram ~14,9
+    }
     // Gabarito (tabuleiro "cobra" da referência): confere célula a célula com os valores esperados
     {
         int ref[4][4] = {{65536, 32768, 16384, 8192},
@@ -200,8 +207,10 @@ int main(void) {
         population_evaluate(again, 123);
         for (int i = 0; i < POP_SIZE; i++) {
             CHECK(pop[i].snake >= 0.0 && pop[i].snake <= 1.0);
-            CHECK(fabs(pop[i].fitness - pop[i].score * (1.0 + SNAKE_WEIGHT * pop[i].snake)) < 1e-9);
-            CHECK(pop[i].fitness >= pop[i].score);
+            double base = FITNESS_LOG2 ? pop[i].lscore : pop[i].score;
+            CHECK(fabs(pop[i].fitness - base * (1.0 + SNAKE_WEIGHT * pop[i].snake)) < 1e-9);
+            CHECK(pop[i].fitness >= base);
+            CHECK(pop[i].lscore <= log2(1.0 + pop[i].score) + 1e-9);  // Jensen: média dos logs <= log da média
             CHECK(pop[i].fitness == again[i].fitness);
         }
     }

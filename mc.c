@@ -25,7 +25,10 @@ Direction mc_choose_move_margin(const Board *b, int rollouts, unsigned int *seed
         board_spawn_tile(&first, seed);
 
         double total = 0.0;
-        for (int r = 0; r < rollouts; r++) total += mc_random_playout(first, seed);
+        for (int r = 0; r < rollouts; r++) {
+            int s = mc_random_playout(first, seed);
+            total += MC_LOG2_SCORE ? score_log2(s) : (double)s;  // média em log2: linear e robusta a partidas sortudas
+        }
 
         double mean = total / rollouts;
         if (mean > best_mean) { second_mean = best_mean; best_mean = mean; best = (Direction)d; }

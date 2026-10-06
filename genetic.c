@@ -25,7 +25,7 @@ void population_init(Individual pop[POP_SIZE], unsigned int base_seed) {
     for (int i = 0; i < POP_SIZE; i++) {
         unsigned int seed = mix_seed(base_seed, (unsigned int)i);
         network_init_random(&pop[i].net, &seed);
-        pop[i].fitness = pop[i].score = pop[i].snake = 0.0;
+        pop[i].fitness = pop[i].score = pop[i].lscore = pop[i].snake = 0.0;
     }
 }
 
@@ -62,17 +62,20 @@ void population_evaluate(Individual pop[POP_SIZE], unsigned int gen_seed) {
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < POP_SIZE; i++) {
         unsigned int seed = mix_seed(gen_seed, (unsigned int)i);
-        double total = 0.0, snake_total = 0.0;
+        double total = 0.0, log_total = 0.0, snake_total = 0.0;
         for (int g = 0; g < GAMES_PER_INDIVIDUAL; g++) {
             double snake;
-            total += play_game(&pop[i].net, &seed, NULL, &snake);
+            double sc = play_game(&pop[i].net, &seed, NULL, &snake);
+            total += sc;
+            log_total += score_log2((int)sc);
             snake_total += snake;
         }
         pop[i].score = total / GAMES_PER_INDIVIDUAL;
+        pop[i].lscore = log_total / GAMES_PER_INDIVIDUAL;
         pop[i].snake = snake_total / GAMES_PER_INDIVIDUAL;
         // Bônus multiplicativo: organização "cobra" só amplifica quem já pontua (nunca vira
         // fitness alto sozinha, p.ex. uma rede que trava com 2 blocos bem arrumados).
-        pop[i].fitness = pop[i].score * (1.0 + SNAKE_WEIGHT * pop[i].snake);
+        pop[i].fitness = (FITNESS_LOG2 ? pop[i].lscore : pop[i].score) * (1.0 + SNAKE_WEIGHT * pop[i].snake);
     }
 }
 
@@ -147,6 +150,6 @@ void population_evolve(const Individual pop[POP_SIZE], Individual next[POP_SIZE]
             if (rand_unit(&seed) < MUTATION_RATE)
                 child[w] += MUTATION_STRENGTH * rand_gaussian(&seed);
         }
-        next[i].fitness = next[i].score = next[i].snake = 0.0;
+        next[i].fitness = next[i].score = next[i].lscore = next[i].snake = 0.0;
     }
 }

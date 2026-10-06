@@ -9,6 +9,10 @@
 #ifndef MC_GAMES
 #define MC_GAMES      16    // partidas completas jogadas pelo jogador Monte Carlo
 #endif
+#ifndef MC_LOG2_SCORE
+#define MC_LOG2_SCORE 1     // 1 = a média das simulações é em log2(1 + score); 0 = score bruto (ver ADR §5)
+#endif
+
 #ifndef MC_MIN_MARGIN
 #define MC_MIN_MARGIN 0.0   // descarta exemplos em que o MC não tem confiança (margem menor que isso)
 #endif
