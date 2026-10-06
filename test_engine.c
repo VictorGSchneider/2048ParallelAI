@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "game.h"
+#include <math.h>
 #include "mc.h"
+#include "genetic.h"
 
 static int failures = 0;
 
@@ -164,6 +166,21 @@ int main(void) {
             board_spawn_tile(&b, &seed);
             double s = board_gabarito_similarity(&b);
             CHECK(s >= 0.0 && s <= 1.0);
+        }
+    }
+
+    // Fitness = score * (1 + SNAKE_WEIGHT * cobra); cobra em [0, 1]; avaliação reprodutível
+    {
+        static Individual pop[POP_SIZE], again[POP_SIZE];
+        population_init(pop, 77);
+        memcpy(again, pop, sizeof(pop));
+        population_evaluate(pop, 123);
+        population_evaluate(again, 123);
+        for (int i = 0; i < POP_SIZE; i++) {
+            CHECK(pop[i].snake >= 0.0 && pop[i].snake <= 1.0);
+            CHECK(fabs(pop[i].fitness - pop[i].score * (1.0 + SNAKE_WEIGHT * pop[i].snake)) < 1e-9);
+            CHECK(pop[i].fitness >= pop[i].score);
+            CHECK(pop[i].fitness == again[i].fitness);
         }
     }
 

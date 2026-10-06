@@ -25,46 +25,54 @@ void population_init(Individual pop[POP_SIZE], unsigned int base_seed) {
     for (int i = 0; i < POP_SIZE; i++) {
         unsigned int seed = mix_seed(base_seed, (unsigned int)i);
         network_init_random(&pop[i].net, &seed);
-        pop[i].fitness = 0.0;
+        pop[i].fitness = pop[i].score = pop[i].snake = 0.0;
     }
 }
 
-// Joga UMA partida inteira com a rede. Retorna o score final e, se `final`, o tabuleiro final.
-static double play_game(const Network *net, unsigned int *seed, Board *final) {
+// Joga UMA partida inteira com a rede. Retorna o score final e, se pedidos, o tabuleiro final
+// e a similaridade média com o gabarito (média sobre os estados visitados ao longo da partida:
+// mede organização sustentada, não só o tabuleiro travado do fim).
+static double play_game(const Network *net, unsigned int *seed, Board *final, double *snake_avg) {
     Board board;
     board_init(&board, seed);
 
+    double snake_sum = 0.0;
+    int states = 0;
     for (int moves = 0; moves < MAX_MOVES_PER_GAME; moves++) {
         Direction dir = network_predict(net, &board);
         // network_predict só devolve um movimento inválido se NENHUM for válido: game over.
         if (!board_move(&board, dir)) break;
         board_spawn_tile(&board, seed);
+        if (snake_avg) { snake_sum += board_gabarito_similarity(&board); states++; }
     }
     if (final) *final = board;
+    if (snake_avg) *snake_avg = states ? snake_sum / states : 0.0;
     return board.score;
 }
 
-static double play_one_game(const Network *net, unsigned int *seed) {
-    return play_game(net, seed, NULL);
-}
-
 double play_report(const Network *net, unsigned int seed, Board *final) {
-    return play_game(net, &seed, final);
+    return play_game(net, &seed, final, NULL);
 }
 
 void population_evaluate(Individual pop[POP_SIZE], unsigned int gen_seed) {
     // Compartilhado: pop (cada iteração escreve só em pop[i].fitness, i distinto: sem corrida).
-    // Privado: seed, total, g (declarados dentro do loop) e o Board (local a play_one_game).
+    // Privado: seed, totais, g (declarados dentro do loop) e o Board (local a play_game).
     // A seed deriva só de (gen_seed, i), então o resultado independe do nº de threads.
     // dynamic: a duração das partidas varia muito (redes boas jogam bem mais lances).
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < POP_SIZE; i++) {
         unsigned int seed = mix_seed(gen_seed, (unsigned int)i);
-        double total = 0.0;
+        double total = 0.0, snake_total = 0.0;
         for (int g = 0; g < GAMES_PER_INDIVIDUAL; g++) {
-            total += play_one_game(&pop[i].net, &seed);
+            double snake;
+            total += play_game(&pop[i].net, &seed, NULL, &snake);
+            snake_total += snake;
         }
-        pop[i].fitness = total / GAMES_PER_INDIVIDUAL;
+        pop[i].score = total / GAMES_PER_INDIVIDUAL;
+        pop[i].snake = snake_total / GAMES_PER_INDIVIDUAL;
+        // Bônus multiplicativo: organização "cobra" só amplifica quem já pontua (nunca vira
+        // fitness alto sozinha, p.ex. uma rede que trava com 2 blocos bem arrumados).
+        pop[i].fitness = pop[i].score * (1.0 + SNAKE_WEIGHT * pop[i].snake);
     }
 }
 
@@ -139,6 +147,6 @@ void population_evolve(const Individual pop[POP_SIZE], Individual next[POP_SIZE]
             if (rand_unit(&seed) < MUTATION_RATE)
                 child[w] += MUTATION_STRENGTH * rand_gaussian(&seed);
         }
-        next[i].fitness = 0.0;
+        next[i].fitness = next[i].score = next[i].snake = 0.0;
     }
 }

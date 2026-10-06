@@ -57,8 +57,8 @@ int main(int argc, char **argv) {
         int best = population_best(pop);
         total_eval_time += (t1 - t0);
 
-        // Teste a cada geração: o melhor indivíduo joga uma partida e o tabuleiro final é
-        // comparado com o gabarito "cobra" (1.0 = perfeitamente organizado).
+        // Acompanhamento por geração: score puro, similaridade média com o gabarito "cobra"
+        // (1.0 = perfeitamente organizado) e maior bloco numa partida de replay do melhor.
         Board final;
         play_report(&pop[best].net, (unsigned int)(gen * 1000 + 11), &final);
         int max_exp = 0;
@@ -66,8 +66,8 @@ int main(int argc, char **argv) {
             for (int c = 0; c < BOARD_SIZE; c++)
                 if (final.grid[r][c] > max_exp) max_exp = final.grid[r][c];
 
-        printf("gen %d | best %.1f | cobra %3.0f%% | maior %d | eval %.3fs\n", gen, pop[best].fitness,
-               100.0 * board_gabarito_similarity(&final), 1 << max_exp, t1 - t0);
+        printf("gen %d | best %.1f | score %.1f | cobra %3.0f%% | maior %d | eval %.3fs\n", gen,
+               pop[best].fitness, pop[best].score, 100.0 * pop[best].snake, 1 << max_exp, t1 - t0);
 
         population_evolve(pop, next, (unsigned int)(gen * 1000 + 7));
         memcpy(pop, next, sizeof(pop));

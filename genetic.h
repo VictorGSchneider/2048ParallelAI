@@ -10,11 +10,16 @@
 #define ELITE_COUNT          4    // os N melhores passam direto pra próxima geração
 #define MUTATION_RATE        0.05 // chance de cada peso sofrer mutação
 #define MUTATION_STRENGTH    0.3  // desvio da perturbação
+#ifndef SNAKE_WEIGHT
+#define SNAKE_WEIGHT         3.0  // bônus de fitness pela organização "cobra" (0 = desligado); ver ADR §6
+#endif
 #define IMITATION_SAMPLES    1024 // exemplos sorteados do dataset Monte Carlo a cada geração de pré-treino
 
 typedef struct {
     Network net;
-    double  fitness;
+    double  fitness;  // = score * (1 + SNAKE_WEIGHT * snake)  (no pré-treino: acurácia de imitação)
+    double  score;    // score médio puro das partidas (sem o bônus)
+    double  snake;    // similaridade média com o gabarito "cobra" ao longo das partidas, em [0, 1]
 } Individual;
 
 void population_init(Individual pop[POP_SIZE], unsigned int base_seed);

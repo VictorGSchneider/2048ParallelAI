@@ -83,10 +83,29 @@ que têm o bloco certo (vazias por último). O gabarito dá 1,0. Comparar por va
 irrelevantes e funciona para qualquer tabuleiro, não só o final.
 - **A cada `make test`:** o gabarito é conferido célula a célula contra os valores da referência, é um
   game over válido, dá nota 1,0, e variações (linha espelhada, cantos trocados) dão nota menor.
-- **A cada geração:** o melhor indivíduo joga uma partida e a saída mostra `cobra X%` (similaridade do
-  tabuleiro final) e `maior N` (maior bloco). Hoje o melhor indivíduo fica em ~7% → ~14% e maior bloco
-  128–256: bem longe do gabarito, o que mostra que a rede ainda não aprendeu a organizar o tabuleiro.
-- A métrica **não entra no fitness** (só acompanha). Usá-la como bônus de fitness é o próximo passo natural.
+- **Bônus de fitness:** `fitness = score × (1 + SNAKE_WEIGHT × cobra)`, com `SNAKE_WEIGHT = 3` e `cobra`
+  = similaridade **média ao longo da partida** (não só do tabuleiro final, que quase sempre é um
+  tabuleiro travado e pouco informativo), média das `GAMES_PER_INDIVIDUAL` partidas. O bônus é
+  multiplicativo de propósito: só amplifica quem já pontua, então uma rede que trava cedo com dois
+  blocos bem arrumados não ganha fitness alto. Cada indivíduo guarda também o `score` puro e o `cobra`.
+- **A cada geração:** a saída mostra `best` (fitness com bônus), `score` (puro), `cobra` (%) e
+  `maior` (maior bloco numa partida de replay do melhor).
+
+Medição (6 sementes, sem Monte Carlo, melhor indivíduo nas últimas 20 gerações; ruído do score ≈ ±130):
+
+| Peso | 50 gerações: score / cobra | 150 gerações: score / cobra |
+|---|---|---|
+| 0 (sem bônus) | 4.521 / 19,8% | 5.607 / 20,2% |
+| 1 | 4.653 / 41,4% | — |
+| **3 (padrão)** | **4.688 / 41,5%** | **5.803 / 42,0%** |
+| 10 | 4.641 / 42,9% | 5.672 / 42,5% |
+| 30 | 4.703 / 42,9% | — |
+
+O bônus **dobra a organização** (≈20% → ≈42%) e traz um ganho pequeno mas consistente de score
+(+3–4% em 50 e em 150 gerações). O efeito satura a partir do peso ~1; 3 foi escolhido por ficar
+no patamar sem dominar o fitness. Custo: ~20% mais tempo no `evaluate` (a similaridade é calculada a
+cada lance), sem mudar o speedup. `SNAKE_WEIGHT = 0` reproduz exatamente o comportamento anterior.
+Mesmo assim a rede ainda está longe do gabarito (maior bloco ~250–300), então o ganho de score é modesto.
 
 ## 7. Paralelismo (`population_evaluate`)
 `#pragma omp parallel for schedule(dynamic)` sobre os indivíduos.
@@ -107,9 +126,9 @@ só acrescentaria overhead.
 ### Resultados (`./bench.sh`, 50 gerações da fase de jogo, máquina de 4 cores)
 | threads | tempo (s) | speedup | eficiência |
 |---|---|---|---|
-| 1 | 2,53 | 1,00 | 100% |
-| 2 | 1,29 | 1,96 | 98% |
-| 4 | 0,66 | 3,85 | 96% |
+| 1 | 3,06 | 1,00 | 100% |
+| 2 | 1,57 | 1,95 | 97% |
+| 4 | 0,79 | 3,90 | 98% |
 | 8 | 0,66 | 3,53 | 44% |
 
 Com 8 threads em 4 cores não há ganho (oversubscription). Rode `./bench.sh` na sua máquina

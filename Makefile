@@ -19,8 +19,8 @@ test_game: game.c game.h
 test: test_engine
 	./test_engine
 
-test_engine: test_engine.c game.c game.h mc.c mc.h rng.h
-	$(CC) -O0 -g -Wall -Wextra -fopenmp test_engine.c game.c mc.c -o test_engine
+test_engine: test_engine.c game.c game.h mc.c mc.h network.c network.h genetic.c genetic.h rng.h
+	$(CC) -O0 -g -Wall -Wextra -fopenmp test_engine.c game.c mc.c network.c genetic.c -o test_engine -lm
 
 clean:
 	rm -f $(OBJ) 2048-ga test_game test_engine speedup.csv
