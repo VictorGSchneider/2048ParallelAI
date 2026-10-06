@@ -125,6 +125,28 @@ int main(void) {
         CHECK(ds.games == 3 && ds.count > 0);
         CHECK(ds.avg_score > rnd);
         for (int i = 0; i < ds.count; i++) CHECK(ds.samples[i].move < 4);
+
+        // Teste de cada iteração (partida) do Monte Carlo e de cada jogada gravada
+        const char *why = "";
+        CHECK(dataset_verify(&ds, &why));
+        if (why[0]) printf("  dataset_verify: %s\n", why);
+        int kept = 0;
+        for (int g = 0; g < ds.games; g++) {
+            CHECK(ds.stats[g].snake_final >= 0.0 && ds.stats[g].snake_final <= 1.0);
+            CHECK(ds.stats[g].snake_avg >= 0.0 && ds.stats[g].snake_avg <= 1.0);
+            CHECK(ds.stats[g].moves >= 1);
+            kept += ds.stats[g].kept;
+        }
+        CHECK(kept == 2);  // keep = 2 no dataset_generate acima
+
+        // O verificador precisa pegar uma jogada inválida adulterada
+        Dataset bad = ds;
+        Sample *copy = malloc((size_t)ds.count * sizeof(Sample));
+        memcpy(copy, ds.samples, (size_t)ds.count * sizeof(Sample));
+        memset(copy[0].cells, 0, sizeof(copy[0].cells));  // tabuleiro vazio: nenhuma jogada é válida
+        bad.samples = copy;
+        CHECK(!dataset_verify(&bad, NULL));
+        free(copy);
         dataset_free(&ds);
     }
 

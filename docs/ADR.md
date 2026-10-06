@@ -47,6 +47,14 @@ Antes do GA de jogo, um jogador Monte Carlo (`mc.c`) gera exemplos:
   descarta jogadas em que o MC está em dúvida (padrão 0 = desligado).
 - **Pré-treino:** `PRETRAIN_GENERATIONS` (30) gerações do GA com fitness = fração de jogadas MC que a
   rede reproduz (`population_evaluate_imitation`, paralelo). Depois o GA segue com o fitness normal.
+- **Teste de cada iteração do MC:** cada partida MC é comparada com o gabarito "cobra" (§6) e a saída
+  mostra uma linha por partida (`mc g | score | jogadas | maior | cobra final | cobra média`, com `*`
+  nas partidas mantidas). Antes do pré-treino, `dataset_verify` confere cada jogada gravada (precisa
+  ser válida no tabuleiro gravado, expoentes em 0..17) e a coerência das estatísticas; se falhar, o
+  programa aborta. `make test` roda a mesma verificação e confirma que ela detecta um dado adulterado.
+  Achado: o MC chega a 1024–2048, mas com cobra de só ~12–25% (média ~20%), no nível do GA sem bônus.
+  Ele maximiza score nas simulações aleatórias e não organiza o tabuleiro em cobra, então suas
+  jogadas não são um bom "professor" para essa organização.
 - As partidas MC são paralelizadas (uma por iteração, `schedule(dynamic)`); o resultado independe das threads.
   `./2048-ga <threads> <csv> 0` desliga o Monte Carlo.
 

@@ -24,8 +24,19 @@ typedef struct {
     unsigned char move;
 } Sample;
 
+// Resultado de UMA iteração do Monte Carlo (uma partida inteira jogada por ele).
 typedef struct {
-    Sample *samples;
+    int    score;
+    int    moves;       // jogadas feitas (todas, não só as que viraram exemplo)
+    int    max_tile;    // maior bloco no tabuleiro final
+    int    kept;        // true se a partida está entre as `keep` de maior score
+    double snake_final; // similaridade do tabuleiro final com o gabarito "cobra", em [0, 1]
+    double snake_avg;   // similaridade média ao longo da partida
+} GameStat;
+
+typedef struct {
+    Sample   *samples;
+    GameStat *stats;    // uma entrada por partida MC, na ordem das partidas (`games` entradas)
     int     count;
     int     games;
     double  avg_score;  // score médio das partidas jogadas pelo Monte Carlo
@@ -51,5 +62,9 @@ Direction mc_choose_move_margin(const Board *b, int rollouts, unsigned int *seed
 // Resultado independe do nº de threads. avg_score/best_score descrevem as `games` partidas.
 void dataset_generate(Dataset *ds, int games, int keep, int rollouts, unsigned int base_seed);
 void dataset_free(Dataset *ds);
+
+// Confere uma partida/dataset: toda jogada gravada é válida no tabuleiro gravado e os números de
+// GameStat são coerentes. Retorna 1 se tudo está ok; senão 0 e, se `why`, uma descrição.
+int dataset_verify(const Dataset *ds, const char **why);
 
 #endif

@@ -38,6 +38,19 @@ int main(int argc, char **argv) {
         printf("monte carlo: %d partidas (score medio %.1f, melhor %d); %d jogadas das melhores viram exemplo (%.2fs)\n",
                ds.games, ds.avg_score, ds.best_score, ds.count, omp_get_wtime() - t0);
 
+        // Teste de cada iteração do Monte Carlo (uma partida): comparação com o gabarito "cobra".
+        for (int g = 0; g < ds.games; g++) {
+            const GameStat *st = &ds.stats[g];
+            printf("mc %d | score %d | jogadas %d | maior %d | cobra final %3.0f%% | cobra media %3.0f%%%s\n",
+                   g, st->score, st->moves, st->max_tile, 100.0 * st->snake_final, 100.0 * st->snake_avg,
+                   st->kept ? " | *" : "");
+        }
+        const char *why = "";
+        if (!dataset_verify(&ds, &why)) {
+            fprintf(stderr, "dataset Monte Carlo invalido: %s\n", why);
+            return 1;
+        }
+
         for (int gen = 0; gen < PRETRAIN_GENERATIONS; gen++) {
             population_evaluate_imitation(pop, &ds, (unsigned int)(gen * 1000 + 3));
             printf("pre %d | imitacao %.1f%%\n", gen, 100.0 * pop[population_best(pop)].fitness);

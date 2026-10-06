@@ -26,5 +26,8 @@ O fitness é `score × (1 + SNAKE_WEIGHT × cobra)`: `cobra` mede o quanto os ta
 se parecem com o gabarito em zigue-zague (ver ADR §6). Cada geração imprime `best` (fitness),
 `score` (puro), `cobra` (%) e `maior` (maior bloco).
 
+Antes do GA, cada partida do Monte Carlo imprime uma linha `mc ...` com a similaridade cobra
+(`*` = partida usada no pré-treino) e o dataset é verificado (`dataset_verify`).
+
 Parâmetros do GA (população, mutação etc.) estão em `genetic.h`; o nº de gerações em `main.c`
 (`-DNUM_GENERATIONS=N` para sobrescrever).
