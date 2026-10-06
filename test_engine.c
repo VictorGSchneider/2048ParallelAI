@@ -1,5 +1,6 @@
 // Testes automáticos do motor do jogo (make test).
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "game.h"
 #include "mc.h"
@@ -123,6 +124,47 @@ int main(void) {
         CHECK(ds.avg_score > rnd);
         for (int i = 0; i < ds.count; i++) CHECK(ds.samples[i].move < 4);
         dataset_free(&ds);
+    }
+
+    // Gabarito (tabuleiro "cobra" da referência): confere célula a célula com os valores esperados
+    {
+        int ref[4][4] = {{65536, 32768, 16384, 8192},
+                         {  512,  1024,  2048, 4096},
+                         {  256,   128,    64,   32},
+                         {    2,     4,     8,   16}};
+        Board want = make(ref), g;
+        board_load_gabarito(&g);
+        CHECK(memcmp(want.grid, g.grid, sizeof(g.grid)) == 0);
+        CHECK(board_is_game_over(&g) == 1);   // cheio e sem merges possíveis
+        CHECK(board_gabarito_similarity(&g) == 1.0);
+
+        // Espelhar a linha 1 (quebra a cobra) piora a nota
+        Board bad = g;
+        for (int c = 0; c < 4; c++) bad.grid[1][c] = g.grid[1][3 - c];
+        CHECK(board_gabarito_similarity(&bad) < 1.0);
+
+        // Trocar o maior bloco de canto: perde posições
+        Board swapped = g;
+        swapped.grid[0][0] = g.grid[3][3]; swapped.grid[3][3] = g.grid[0][0];
+        CHECK(board_gabarito_similarity(&swapped) < board_gabarito_similarity(&g));
+
+        // Poucos blocos: certos se estão no começo do caminho da cobra, errados se no fim
+        int head[4][4] = {{8,4,0,0},{0},{0},{0}};
+        int tail[4][4] = {{0},{0},{0},{0,0,4,8}};
+        Board h = make(head), tl = make(tail);
+        CHECK(board_gabarito_similarity(&h) == 1.0);
+        CHECK(board_gabarito_similarity(&tl) < 1.0);
+
+        // A nota fica em [0, 1] em todos os estados de uma partida
+        unsigned int seed = 5;
+        Board b;
+        board_init(&b, &seed);
+        for (int i = 0; i < 300 && !board_is_game_over(&b); i++) {
+            board_move(&b, (Direction)(rand_r(&seed) % 4));
+            board_spawn_tile(&b, &seed);
+            double s = board_gabarito_similarity(&b);
+            CHECK(s >= 0.0 && s <= 1.0);
+        }
     }
 
     if (failures) { printf("%d teste(s) falharam\n", failures); return 1; }

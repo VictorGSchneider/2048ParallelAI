@@ -32,6 +32,10 @@ void population_evaluate_imitation(Individual pop[POP_SIZE], const Dataset *ds, 
 // Seleção + cruzamento + mutação. Lê pop (já avaliada), escreve next.
 void population_evolve(const Individual pop[POP_SIZE], Individual next[POP_SIZE], unsigned int gen_seed);
 
+// Joga UMA partida com a rede (seed própria) e devolve o tabuleiro final em *final.
+// Usado para acompanhar o melhor indivíduo a cada geração (similaridade com o gabarito).
+double play_report(const Network *net, unsigned int seed, Board *final);
+
 // Auxiliar: índice do melhor indivíduo (maior fitness).
 int population_best(const Individual pop[POP_SIZE]);
 

@@ -8,7 +8,7 @@ Algoritmo genético que evolui redes neurais para jogar 2048, pré-treinado com 
 make                     # gera ./2048-ga
 ./2048-ga [threads] [csv] [partidas_mc]  # padrão: 1 thread, speedup.csv, 16 partidas MC (0 = sem Monte Carlo)
 ./bench.sh [threads...]  # tabela de speedup (padrão: 1 2 4 8; REPS=3 por padrão)
-make test                # testes do motor do jogo
+make test                # testes do motor do jogo (inclui o gabarito "cobra")
 make test_game && ./test_game   # jogue no terminal com w/a/s/d
 ```
 
@@ -21,6 +21,9 @@ make test_game && ./test_game   # jogue no terminal com w/a/s/d
 | `genetic.c/.h` | população, avaliação paralela, seleção/crossover/mutação |
 | `main.c` | loop de gerações e saída em CSV |
 | `docs/ADR.md` | decisões de projeto, análise de paralelismo e resultados |
+
+Cada geração imprime `best` (fitness), `cobra` (similaridade do tabuleiro final do melhor
+indivíduo com o gabarito em zigue-zague, ver ADR §6) e `maior` (maior bloco).
 
 Parâmetros do GA (população, mutação etc.) estão em `genetic.h`; o nº de gerações em `main.c`
 (`-DNUM_GENERATIONS=N` para sobrescrever).

@@ -29,8 +29,8 @@ void population_init(Individual pop[POP_SIZE], unsigned int base_seed) {
     }
 }
 
-// Joga UMA partida inteira com a rede. Retorna o score final.
-static double play_one_game(const Network *net, unsigned int *seed) {
+// Joga UMA partida inteira com a rede. Retorna o score final e, se `final`, o tabuleiro final.
+static double play_game(const Network *net, unsigned int *seed, Board *final) {
     Board board;
     board_init(&board, seed);
 
@@ -40,7 +40,16 @@ static double play_one_game(const Network *net, unsigned int *seed) {
         if (!board_move(&board, dir)) break;
         board_spawn_tile(&board, seed);
     }
+    if (final) *final = board;
     return board.score;
+}
+
+static double play_one_game(const Network *net, unsigned int *seed) {
+    return play_game(net, seed, NULL);
+}
+
+double play_report(const Network *net, unsigned int seed, Board *final) {
+    return play_game(net, &seed, final);
 }
 
 void population_evaluate(Individual pop[POP_SIZE], unsigned int gen_seed) {

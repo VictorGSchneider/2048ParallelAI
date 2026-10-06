@@ -95,6 +95,45 @@ int board_is_game_over(const Board *b) {
     return 1;
 }
 
+// Caminho da cobra: linha 0 da esquerda pra direita, linha 1 da direita pra esquerda, e assim por diante.
+static void snake_cell(int k, int *r, int *c) {
+    *r = k / BOARD_SIZE;
+    *c = (*r % 2 == 0) ? k % BOARD_SIZE : BOARD_SIZE - 1 - k % BOARD_SIZE;
+}
+
+void board_load_gabarito(Board *b) {
+    // Tiles em ordem decrescente: 2^16 ... 2^1, ao longo do caminho da cobra.
+    memset(b, 0, sizeof(*b));
+    for (int k = 0; k < BOARD_SIZE * BOARD_SIZE; k++) {
+        int r, c;
+        snake_cell(k, &r, &c);
+        b->grid[r][c] = BOARD_SIZE * BOARD_SIZE - k;
+    }
+    b->score = 0;
+    b->game_over = 1;
+}
+
+double board_gabarito_similarity(const Board *b) {
+    int n = BOARD_SIZE * BOARD_SIZE;
+    int sorted[BOARD_SIZE * BOARD_SIZE];
+    for (int i = 0; i < n; i++) sorted[i] = b->grid[i / BOARD_SIZE][i % BOARD_SIZE];
+
+    // Ordena decrescente (insertion sort: só 16 elementos).
+    for (int i = 1; i < n; i++) {
+        int v = sorted[i], j = i - 1;
+        while (j >= 0 && sorted[j] < v) { sorted[j + 1] = sorted[j]; j--; }
+        sorted[j + 1] = v;
+    }
+
+    int match = 0;
+    for (int k = 0; k < n; k++) {
+        int r, c;
+        snake_cell(k, &r, &c);
+        if (b->grid[r][c] == sorted[k]) match++;
+    }
+    return (double)match / n;
+}
+
 void board_print(const Board *b) {
     printf("score: %d\n", b->score);
     for (int r = 0; r < BOARD_SIZE; r++) {

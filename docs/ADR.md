@@ -68,7 +68,27 @@ Conclusão: com esta rede/GA, o pré-treino por imitação é neutro. O MC fica 
 caminhos que provavelmente rendem mais são usá-lo como parte do fitness ou como jogador-professor
 numa rede maior.
 
-## 6. Paralelismo (`population_evaluate`)
+## 6. Gabarito "cobra" (referência de organização)
+O tabuleiro de referência (`board_load_gabarito`) é a configuração perfeita em zigue-zague:
+
+```
+65536 32768 16384  8192
+  512  1024  2048  4096
+  256   128    64    32
+    2     4     8    16
+```
+`board_gabarito_similarity` ordena os blocos do maior pro menor e compara com o caminho da cobra
+(linha 0 da esquerda pra direita, linha 1 da direita pra esquerda...): a fração das 16 posições
+que têm o bloco certo (vazias por último). O gabarito dá 1,0. Comparar por valor torna empates
+irrelevantes e funciona para qualquer tabuleiro, não só o final.
+- **A cada `make test`:** o gabarito é conferido célula a célula contra os valores da referência, é um
+  game over válido, dá nota 1,0, e variações (linha espelhada, cantos trocados) dão nota menor.
+- **A cada geração:** o melhor indivíduo joga uma partida e a saída mostra `cobra X%` (similaridade do
+  tabuleiro final) e `maior N` (maior bloco). Hoje o melhor indivíduo fica em ~7% → ~14% e maior bloco
+  128–256: bem longe do gabarito, o que mostra que a rede ainda não aprendeu a organizar o tabuleiro.
+- A métrica **não entra no fitness** (só acompanha). Usá-la como bônus de fitness é o próximo passo natural.
+
+## 7. Paralelismo (`population_evaluate`)
 `#pragma omp parallel for schedule(dynamic)` sobre os indivíduos.
 - **Compartilhado:** o array `pop`. Cada iteração escreve só em `pop[i].fitness` (i distinto): sem corrida.
 - **Privado:** `seed`, `total`, `g` (declaradas dentro do loop) e o `Board` (local a `play_one_game`).
