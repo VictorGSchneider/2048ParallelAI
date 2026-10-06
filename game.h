@@ -6,7 +6,7 @@
 typedef enum { DIR_UP = 0, DIR_DOWN = 1, DIR_LEFT = 2, DIR_RIGHT = 3 } Direction;
 
 typedef struct {
-    int grid[BOARD_SIZE][BOARD_SIZE];  // TODO: decidir se guarda o valor (2,4,8...) ou o expoente (1,2,3...)
+    int grid[BOARD_SIZE][BOARD_SIZE];  // guarda o EXPOENTE (0 = vazio, 1 = 2, 2 = 4, 3 = 8...); o valor é 1 << exp
     int score;
     int game_over;
 } Board;
@@ -25,6 +25,24 @@ int board_move(Board *b, Direction dir);
 
 // Game over = nenhum dos 4 movimentos muda o grid.
 int board_is_game_over(const Board *b);
+
+// Gabarito: tabuleiro "cobra" perfeito (referência de organização). Ordem do caminho:
+//   65536 32768 16384  8192
+//     512  1024  2048  4096
+//     256   128    64    32
+//       2     4     8    16
+void board_load_gabarito(Board *b);
+
+// Similaridade com o gabarito, em [0, 1]. Ordena os blocos do tabuleiro do maior pro menor e
+// compara com o caminho da cobra: a k-ésima posição do caminho deveria ter o k-ésimo maior bloco
+// (células vazias por último). Conta a fração das 16 posições corretas. Comparar por valor torna
+// empates irrelevantes. O próprio gabarito dá 1.0; um tabuleiro vazio também (trivialmente).
+double board_gabarito_similarity(const Board *b);
+
+// Score em escala log2: log2(1 + score). O score soma VALORES dos merges (cresce de forma
+// exponencial: 30.000+ numa boa partida); em log2 vira ~ "quantas vezes dobrou", linear no
+// progresso, e uma partida sortuda não domina as médias. O +1 mantém score 0 -> 0.
+double score_log2(int score);
 
 // Debug: imprime o tabuleiro no terminal.
 void board_print(const Board *b);
