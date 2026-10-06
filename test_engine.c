@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "game.h"
+#include "mc.h"
 
 static int failures = 0;
 
@@ -95,6 +96,33 @@ int main(void) {
         CHECK(n == 2 && b.score == 0 && b.game_over == 0);
         for (int i = 0; i < 14; i++) CHECK(board_spawn_tile(&b, &seed) == 1);
         CHECK(board_spawn_tile(&b, &seed) == 0);
+    }
+
+    // Monte Carlo: só uma jogada válida -> tem que escolhê-la; game over -> board_move falha
+    {
+        int v[4][4] = {{2,4,2,4},{4,2,4,2},{2,4,2,4},{4,2,4,0}};
+        Board b = make(v);
+        unsigned int seed = 3;
+        Direction d = mc_choose_move(&b, 5, &seed);
+        CHECK(d == DIR_DOWN || d == DIR_RIGHT);  // as únicas que mexem alguma tile
+        CHECK(board_move(&b, d) == 1);
+        int dead[4][4] = {{2,4,2,4},{4,2,4,2},{2,4,2,4},{4,2,4,2}};
+        Board g = make(dead);
+        CHECK(board_move(&g, mc_choose_move(&g, 5, &seed)) == 0);
+    }
+    // Monte Carlo joga bem melhor que movimentos aleatórios, e o dataset é coerente
+    {
+        unsigned int seed = 11;
+        double rnd = 0;
+        for (int i = 0; i < 20; i++) { Board b; board_init(&b, &seed); rnd += mc_random_playout(b, &seed); }
+        rnd /= 20;
+
+        Dataset ds;
+        dataset_generate(&ds, 3, 2, 8, 99);
+        CHECK(ds.games == 3 && ds.count > 0);
+        CHECK(ds.avg_score > rnd);
+        for (int i = 0; i < ds.count; i++) CHECK(ds.samples[i].move < 4);
+        dataset_free(&ds);
     }
 
     if (failures) { printf("%d teste(s) falharam\n", failures); return 1; }

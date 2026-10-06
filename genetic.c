@@ -4,21 +4,13 @@
 #include <omp.h>
 #include "genetic.h"
 #include "game.h"
+#include "rng.h"
 
 #define TOURNAMENT_SIZE 3
 #define NUM_WEIGHTS (sizeof(Network) / sizeof(double))
 
 // Network é só doubles, então dá pra tratá-la como um vetor plano de pesos (crossover/mutação).
 _Static_assert(sizeof(Network) % sizeof(double) == 0, "Network deve conter apenas doubles");
-
-// Mistura (splitmix32-like) para derivar seeds independentes a partir de (base, índice).
-// Seeds consecutivas (base+i) geram sequências correlacionadas no rand_r; o hash evita isso.
-static unsigned int mix_seed(unsigned int base, unsigned int idx) {
-    unsigned int z = base + 0x9e3779b9u * (idx + 1u);
-    z = (z ^ (z >> 16)) * 0x85ebca6bu;
-    z = (z ^ (z >> 13)) * 0xc2b2ae35u;
-    return z ^ (z >> 16);
-}
 
 static double rand_unit(unsigned int *seed) {  // (0, 1]
     return ((double)rand_r(seed) + 1.0) / ((double)RAND_MAX + 1.0);
@@ -64,6 +56,32 @@ void population_evaluate(Individual pop[POP_SIZE], unsigned int gen_seed) {
             total += play_one_game(&pop[i].net, &seed);
         }
         pop[i].fitness = total / GAMES_PER_INDIVIDUAL;
+    }
+}
+
+void population_evaluate_imitation(Individual pop[POP_SIZE], const Dataset *ds, unsigned int gen_seed) {
+    if (ds->count == 0) return;
+    int n = ds->count < IMITATION_SAMPLES ? ds->count : IMITATION_SAMPLES;
+
+    // Sorteio sequencial (barato) antes da região paralela: todas as threads só leem `picked`.
+    int picked[IMITATION_SAMPLES];
+    unsigned int seed = mix_seed(gen_seed, 0xfffffffeu);
+    for (int s = 0; s < n; s++) picked[s] = (int)(rand_r(&seed) % (unsigned int)ds->count);
+
+    // Mesmo esquema do evaluate: só pop[i].fitness é escrito, por uma única thread.
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < POP_SIZE; i++) {
+        int hits = 0;
+        for (int s = 0; s < n; s++) {
+            const Sample *sm = &ds->samples[picked[s]];
+            Board b;
+            b.score = 0;
+            b.game_over = 0;
+            for (int k = 0; k < BOARD_SIZE * BOARD_SIZE; k++)
+                b.grid[k / BOARD_SIZE][k % BOARD_SIZE] = sm->cells[k];
+            if ((int)network_predict(&pop[i].net, &b) == sm->move) hits++;
+        }
+        pop[i].fitness = (double)hits / n;
     }
 }
 
