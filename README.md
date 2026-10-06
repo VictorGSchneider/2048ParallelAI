@@ -1,1 +1,25 @@
 # 2048ParallelAI
+
+Algoritmo genético que evolui redes neurais para jogar 2048. A avaliação da população
+(a parte cara) é paralelizada com OpenMP.
+
+## Uso
+```sh
+make                     # gera ./2048-ga
+./2048-ga [threads] [csv] # padrão: 1 thread, speedup.csv (cada execução acrescenta uma linha)
+./bench.sh [threads...]  # tabela de speedup (padrão: 1 2 4 8; REPS=3 por padrão)
+make test                # testes do motor do jogo
+make test_game && ./test_game   # jogue no terminal com w/a/s/d
+```
+
+## Estrutura
+| Arquivo | Conteúdo |
+|---|---|
+| `game.c/.h` | motor do 2048 (grid em expoentes) |
+| `network.c/.h` | rede 16→16→4 (tanh) e `network_predict` |
+| `genetic.c/.h` | população, avaliação paralela, seleção/crossover/mutação |
+| `main.c` | loop de gerações e saída em CSV |
+| `docs/ADR.md` | decisões de projeto, análise de paralelismo e resultados |
+
+Parâmetros do GA (população, mutação etc.) estão em `genetic.h`; o nº de gerações em `main.c`
+(`-DNUM_GENERATIONS=N` para sobrescrever).

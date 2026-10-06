@@ -3,7 +3,7 @@
 
 #include "network.h"
 
-#define POP_SIZE             64   // TODO: ajustar. Múltiplo do nº de threads ajuda a balancear carga.
+#define POP_SIZE             64   // múltiplo de 1/2/4/8/16 threads: ajuda a balancear a carga
 #define GAMES_PER_INDIVIDUAL 5    // média de N partidas reduz o ruído do RNG
 #define MAX_MOVES_PER_GAME   5000 // trava de segurança contra loop infinito
 #define ELITE_COUNT          4    // os N melhores passam direto pra próxima geração

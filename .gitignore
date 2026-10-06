@@ -1,0 +1,5 @@
+*.o
+2048-ga
+test_game
+test_engine
+speedup.csv

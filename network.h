@@ -4,7 +4,7 @@
 #include "game.h"
 
 #define INPUT_SIZE  16   // grid 4x4 achatado
-#define HIDDEN_SIZE 16   // TODO: decidir (8? 16? 32?) e justificar na ADR
+#define HIDDEN_SIZE 16   // ver docs/ADR.md
 #define OUTPUT_SIZE 4    // up, down, left, right
 
 typedef struct {

@@ -6,7 +6,7 @@
 typedef enum { DIR_UP = 0, DIR_DOWN = 1, DIR_LEFT = 2, DIR_RIGHT = 3 } Direction;
 
 typedef struct {
-    int grid[BOARD_SIZE][BOARD_SIZE];  // TODO: decidir se guarda o valor (2,4,8...) ou o expoente (1,2,3...)
+    int grid[BOARD_SIZE][BOARD_SIZE];  // guarda o EXPOENTE (0 = vazio, 1 = 2, 2 = 4, 3 = 8...); o valor é 1 << exp
     int score;
     int game_over;
 } Board;
